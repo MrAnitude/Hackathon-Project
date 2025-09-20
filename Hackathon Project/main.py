@@ -1,3 +1,6 @@
+from flask import send_from_directory
+import os
+
 import os
 from spotipy import Spotify
 from flask import Flask, request, redirect, session, url_for
@@ -11,6 +14,13 @@ REDIRECT_URI = os.getenv("URI")
 app = Flask("SoundMate")
 app.secret_key = CLIENT_SECRET
 app.config['SESSION_COOKIE_NAME'] = 'spotify-login-session'
+@app.route("/", defaults={"path": ""})
+@app.route("/<path:path>")
+def serve_frontend(path):
+    if path != "" and os.path.exists("dist/" + path):
+        return send_from_directory("dist", path)
+    else:
+        return send_from_directory("dist", "index.html")
 
 scope = "playlist-modify-public playlist-modify-private user-top-read"
 
@@ -29,9 +39,10 @@ def index():
 @app.route('/callback')
 def callback():
     code = request.args.get('code')
-    token_info = sp_oauth.get_access_token(code, as_dict=False)
+    token_info = sp_oauth.get_access_token(code)
     session['token_info'] = token_info
     return redirect(url_for('create_playlist'))
+
 
 
 @app.route('/create_playlist')
